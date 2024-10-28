@@ -1,0 +1,508 @@
+// ==UserScript==
+// @name         Ameblo Wysiwyg ⭐
+// @namespace  http://tampermonkey.net/
+// @version      2.0
+// @description  Ameba編集画面とブログページの Wysiwygを管理
+// @author       Ameba Blog User
+// @match        https://blog.ameba.jp/ucs/entry/srventry*
+// @exclude      https://blog.ameba.jp/ucs/entry/srventrylist.do*
+// @grant        none
+// ==/UserScript==
+
+
+let ua=0;
+let agent=window.navigator.userAgent.toLowerCase();
+if(agent.indexOf('firefox') > -1){ ua=1; } // Firefoxの場合のフラッグ
+
+let FontAwesomeURL=
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css';
+let help_url='https://ameblo.jp/personwritep/entry-12803805376.html';
+
+
+let menu_view=0; // メニューの表示・非表示
+
+let wywg_set=[]; // Ameblo Wywg のユーザー設定
+
+let read_json=localStorage.getItem('Wywg_set'); // ローカルストレージ 保存名
+wywg_set=JSON.parse(read_json);
+if(wywg_set==null){
+    wywg_set=[0, 16, 1.6, 1, 1, 1, 1, "#3970b5", "#cccccc", 1, "#ffffff", "#2b5d75",
+              1, 1, 1, 1, 1, 1, 1, 0, 0]; }
+if(wywg_set.length<21){
+    wywg_set[20]=0; }
+
+
+let write_json=JSON.stringify(wywg_set);
+localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+
+
+let retry=0;
+let interval=setInterval(wait_target, 100);
+function wait_target(){
+    retry++;
+    if(retry>10){ // リトライ制限 10回 1sec
+        clearInterval(interval); }
+    let target=document.getElementById('cke_1_contents'); // 監視 target
+    if(target){
+        main(); }}
+
+
+
+function main(){
+    sessionStorage.setItem("jslord_1", "1"); // 📛
+
+    let target=document.getElementById('cke_1_contents'); // 監視 target
+    let monitor=new MutationObserver(insert_tag);
+    monitor.observe(target, {childList: true}); // ショートカット待受け開始
+
+    insert_tag();
+
+    setTimeout(()=>{
+        stylus_active();
+    }, 200);
+
+} // main()
+
+
+
+function insert_tag(){
+    let l_body=document.querySelector('.l-body');
+    let bgc1=window.getComputedStyle(l_body, null).getPropertyValue('background-color');
+    let cke_contents=document.querySelector('.cke_contents');
+    let bgc2=window.getComputedStyle(cke_contents, null).getPropertyValue('background-color');
+    let bdc1=window.getComputedStyle(cke_contents, null).getPropertyValue('border-color');
+
+    let style_text='';
+
+    style_text+='.cke_editable { ';
+
+    if(wywg_set[0]==0){
+        style_text+='font-family: Meiryo, sans-serif !important; '; }
+    else if(wywg_set[0]==1){
+        style_text+='font-family: "ＭＳ Ｐゴシック", sans-serif !important; '; }
+
+    style_text+='font-size: '+ wywg_set[1] +'px !important; line-height: '+ wywg_set[2] +'; } ';
+
+    if(wywg_set[3]==1){
+        if(wywg_set[0]==0){
+            style_text+=
+                '.cke_editable img[src*="emoji.ameba.jp"], '+
+                '.cke_editable img[src*=char2] { vertical-align: -2px; } '+
+                '.cke_editable img[src*=char3], '+
+                '.cke_editable img[src*=char4] { vertical-align: -3px; margin-top: -4px; } '; }
+        else if(wywg_set[0]==1){
+            style_text+=
+                '.cke_editable img[src*="emoji.ameba.jp"], '+
+                '.cke_editable img[src*=char2] { vertical-align: 0; margin: 0; } '+
+                '.cke_editable img[src*=char3], '+
+                '.cke_editable img[src*=char4] { vertical-align: -3px; margin-top: -4px; } '; }}
+
+    if(wywg_set[4]==1){
+        style_text+='video, img { vertical-align: middle; } '; }
+
+    if(wywg_set[5]==1){
+        style_text+=
+            '.cke_editable h2, .cke_editable h3, .cke_editable h4 '+
+            '{ font-weight: bold; line-height: '+ wywg_set[2] +'; } '; }
+
+    if(wywg_set[6]==1){
+        style_text+=
+            'a, a:visited { color: '+ wywg_set[7] +
+            '; text-decoration-color: '+ wywg_set[8] +'; } '; }
+
+    if(wywg_set[9]==1){
+        style_text+=
+            'body :not(img)::selection { color: '+ wywg_set[10] +
+            '; background: '+ wywg_set[11] +'; } '; }
+
+    if(wywg_set[12]==1){
+        style_text+=
+            'body img[src*="/img/char/"]::selection { background: rgba(96, 125, 139, 0.2); } '+
+            'body img[src*="/img/decoPeta/"]::selection { background: rgba(96, 125, 139, 0.2); } '+
+            'body a > img::selection { background: transparent; } '+
+            'body img:hover { outline: 1px solid #2196f3; opacity: 1; } '+
+            '.ck-imgmask { border: 2px solid #2196f3; } '; }
+
+    if(wywg_set[13]==1){
+        style_text+=
+            '.cke_editable iframe[src*="youtube"] { '+
+            'display: block; margin: 0 auto; width: 80%; height: 320px; } '; }
+
+    if(wywg_set[14]==1){
+        style_text+=
+            '.youtube_iframe { pointer-events: auto; } '; }
+
+    if(wywg_set[15]==1){
+        style_text+=
+            '.cke_editable pre { font-size: 1em; font-family: inherit; } '; }
+
+    if(wywg_set[16]==1){
+        let style_text_head=
+            '@import url("'+ FontAwesomeURL +'"); '
+        style_text=style_text_head + style_text; }
+
+    if(wywg_set[17]==1){
+        style_text+=
+            '.cke_editable { min-height: 100vh; overflow-y: scroll; '+
+            'margin: 0 auto !important; padding: 12px 8px 0; color: #000; '+
+            'box-shadow: #f8f8f8 0 -8px 0 8px inset, '+ bgc2 + ' 0 0 0 50vw; } '+
+            '.cke_editable:focus { outline: none; } '+
+            '.cke_editable_black { '+
+            'box-shadow: inset 0 -8px 0 8px #3a3a3a, '+ bgc2 +' 0 0 0 50vw; '+
+            'color: #fff; } '; }
+
+    if(wywg_set[18]==1){
+        style_text+=
+            '::-webkit-scrollbar { width: 16px; } '+
+            '::-webkit-scrollbar-track { background: ' + bgc2 + '; } '+
+            '::-webkit-scrollbar-thumb { background: ' + bgc1 + '; '+
+            'box-shadow: inset 0 0 0 .5px ' + bdc1 + '; } '+
+            'html { scrollbar-color: ' +bgc1+' '+bgc2+ '; } '; }
+
+
+    let insert_style;
+    let editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+    if(editor_iframe){ // iframe読込みが実行条件
+        let iframe_doc=editor_iframe.contentWindow.document;
+        if(iframe_doc){
+            let iframe_body=iframe_doc.querySelector('body.cke_editable');
+            let iframe_html=iframe_doc.querySelector('html');
+
+            insert_style=iframe_doc.createElement("style");
+            insert_style.appendChild(iframe_doc.createTextNode(style_text));
+            insert_style.setAttribute("class", "iframe_style");
+
+            if(!iframe_doc.querySelector('.iframe_style')){
+                iframe_html.appendChild(insert_style); }}}
+
+
+
+    let outer_style_text=''; // body側（iframe外）に適用するCSS
+    if(wywg_set[16]==1){
+        let outer_style_text_head=
+            '@import url("'+ FontAwesomeURL +'"); ';
+        outer_style_text+=outer_style_text_head; }
+
+    if(wywg_set[20]==1){
+        outer_style_text+='.p-photos-editorDropArea { display: none; } '; }
+
+    let insert_outer_style=document.createElement("style");
+    insert_outer_style.appendChild(document.createTextNode(outer_style_text));
+    insert_outer_style.setAttribute("class", "outer_style");
+
+    if(!document.querySelector('.outer_style')){
+        document.documentElement.appendChild(insert_outer_style); }
+
+} // insert_tag()
+
+
+
+function setup(){
+    let bfont=document.getElementsByName('bfont');
+    if(bfont.length==3){
+        if(wywg_set[0]==0){
+            bfont[0].checked=true; }
+        else if(wywg_set[0]==1){
+            bfont[1].checked=true; }
+        else{
+            bfont[2].checked=true; }}
+
+    for(let k=0; k<bfont.length; k++){
+        bfont[k].addEventListener('change', function(){
+            if(bfont[k].checked){
+                wywg_set[0]=k; }
+
+            let write_json=JSON.stringify(wywg_set);
+            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+
+            renew_insert_tag();
+        }); }
+
+
+    let if_check=document.getElementsByName('if_check');
+    if(if_check.length==3){
+        if(wywg_set[19]==0){
+            if_check[0].checked=true; }
+        else if(wywg_set[19]==1){
+            if_check[1].checked=true; }
+        else if(wywg_set[19]==2){
+            if_check[2].checked=true; }}
+
+    for(let k=0; k<if_check.length; k++){
+        if_check[k].addEventListener('change', function(){
+            if(if_check[k].checked){
+                wywg_set[19]=k; }
+
+            let write_json=JSON.stringify(wywg_set);
+            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+
+        }); }
+
+
+
+    input_value_setter(1);
+    input_value_setter(2);
+    checkbox_setter(3);
+    checkbox_setter(4);
+    checkbox_setter(5);
+    checkbox_setter(6);
+    input_value_setter(7);
+    input_value_setter(8);
+    checkbox_setter(9);
+    input_value_setter(10);
+    input_value_setter(11);
+    checkbox_setter(12);
+    checkbox_setter(13);
+    checkbox_setter(14);
+    checkbox_setter(15);
+    checkbox_setter(16);
+    checkbox_setter(17);
+    checkbox_setter(18);
+    checkbox_setter(20);
+
+} // setup()
+
+
+
+function checkbox_setter(k){
+    let wywg=document.querySelector('#wywg'+k);
+    if(wywg){
+        if(wywg_set[k]==1){
+            wywg.checked=true; }
+        else{
+            wywg.checked=false; }
+
+        wywg.onclick=function(){
+            if(wywg_set[k]==1){
+                wywg.checked=false;
+                wywg_set[k]=0; }
+            else{
+                wywg.checked=true;
+                wywg_set[k]=1; }
+            let write_json=JSON.stringify(wywg_set);
+            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+            renew_insert_tag(); }}}
+
+
+
+function input_value_setter(k){
+    let wywg=document.querySelector('#wywg'+k);
+    if(wywg){
+        wywg.value=wywg_set[k];
+
+        wywg.onchange=function(){
+            wywg_set[k]=wywg.value;
+            let write_json=JSON.stringify(wywg_set);
+            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+            renew_insert_tag(); }}}
+
+
+
+function renew_insert_tag(){
+    let editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+    if(editor_iframe){ // iframe読込みが実行条件
+        let iframe_doc=editor_iframe.contentWindow.document;
+        if(iframe_doc){
+            let iframe_body=iframe_doc.querySelector('body.cke_editable');
+            let iframe_html=iframe_doc.querySelector('html');
+
+            if(iframe_doc.querySelector('.iframe_style')){
+                iframe_doc.querySelector('.iframe_style').remove(); }}}
+
+    if(document.querySelector('.outer_style')){
+        document.querySelector('.outer_style').remove(); }
+
+    insert_tag(); }
+
+
+
+function disp_panel(){
+
+    let css=
+        '<style>'+
+        '.wywg_menu { position: absolute; top: 10px; right: 10px; font: 16px/28px Meiryo; '+
+        'padding: 0.6em 1em; border: 1px solid #009688; border-radius: 4px; z-index: 15; '+
+        'background: #f9fafa; box-shadow: 6px 6px 20px rgba(0, 0, 0, 0.3); } '+
+        '.wywg_menu .title { padding: 3px 10px 1px; margin-bottom: 10px; font-weight: bold; '+
+        'color: #fff; background: #2196f3; } '+
+
+        '.wywg_menu .title_sub { padding: 2px 10px 0; margin: 12px 0 7px; text-align: center; '+
+        'color: #fff; background: #2196f3; } '+
+
+        '#wywg_close { display: inline-block; padding: 0 3px; height: 19px; '+
+        'line-height: 20px; border: 1px solid #ddd; border-radius: 2px; cursor: pointer; } '+
+        '.wywg_menu input { height: 18px; font-family: system-ui; text-align: center; '+
+        'margin-right: 6px; } '+
+        '.wywg_menu input[type="radio"] { margin-right: 3px; vertical-align: -3px; } '+
+        '.wywg_menu label { margin-left: 1em; } '+
+
+        '#wywg1, #wywg2 { width: 50px; } '+
+        '#wywg3, #wywg4, #wywg5, #wywg6, #wywg9, #wywg12, #wywg13, #wywg14, '+
+        '#wywg15, #wywg16, #wywg17, #wywg18, #wywg19, #wywg20 { '+
+        'vertical-align: -3px; } '+
+        '#wywg7, #wywg8, #wywg10, #wywg11 { height: 26px; width: 22px; margin: 0; '+
+        'border: none; background: none; vertical-align: -3px; } '+
+        '#bad, #good { height: 26px; margin-top: 4px; color: #fff; background: red; '+
+        'display: none; } ';
+
+    if(ua==1){
+        css+=
+            '.wywg_menu input[type="radio"] { vertical-align: -1px; } '+
+            '#wywg3, #wywg4, #wywg5, #wywg6, #wywg9, #wywg12, #wywg13, #wywg14, '+
+            '#wywg15, #wywg16, #wywg17, #wywg18, #wywg20 { vertical-align: -1px; } '+
+            '#wywg7, #wywg8, #wywg10, #wywg11 { height: 18px; width: 18px; }'; }
+
+    css+='</style>';
+
+
+    let help=
+        '<a class="help_AW" href="'+ help_url +'" target="_blank">'+
+        '<svg class="help_svg_AW" width="20" height="20" viewBox="0 0 150 150">'+
+        '<path  fill="#fff" d="M66 13C56 15 47 18 39 24C-12 60 18 146 82 137C92 '+
+        '135 102 131 110 126C162 90 128 4 66 13M68 25C131 17 145 117 81 '+
+        '125C16 133 3 34 68 25M69 40C61 41 39 58 58 61C66 63 73 47 82 57C84 '+
+        '60 83 62 81 65C77 70 52 90 76 89C82 89 82 84 86 81C92 76 98 74 100 66'+
+        'C105 48 84 37 69 40M70 94C58 99 66 118 78 112C90 107 82 89 70 94z">'+
+        '</path></svg>'+
+        '<style>.help_AW { text-decoration: none; } '+
+        '.help_svg_AW { vertical-align: -4px; }</style></a>';
+
+    let menu_content=
+        '<div class="wywg_menu">'+
+        '<p class="title">'+ help +
+        '　　〔 Ameblo Wysiwyg Menu 〕　　　'+
+        '<b id="wywg_close">✖</b><p>'+
+        '基本フォント<label><input type="radio" name="bfont" value="1">Meiryo</label>'+
+        '<label><input type="radio" name="bfont" value="2">MS PGothic</label>'+
+        '<label><input type="radio" name="bfont" value="3">無指定</label><br>'+
+        '基本フォントサイズ　　 '+
+        '<input id="wywg1" type="number" step="1" min="12" max="20">px<br>'+
+        '基本行間隔　　　　　　 '+
+        '<input id="wywg2" type="number" step=".1" min=".5" max="3"><br>'+
+        '<input id="wywg3" type="checkbox">アメブロ絵文字 位置補正（基本フォント連動）✜<br>'+
+        '<input id="wywg4" type="checkbox">画像・動画の下側行との間隔補正<br>'+
+        '<input id="wywg5" type="checkbox">h2・h3・h4 見出し 太字指定と行間隔補正<br>'+
+        '<input id="wywg6" type="checkbox">リンク文字列の色　　　　'+
+        '文字色 <input id="wywg7" type="color">　'+
+        '下線色 <input id="wywg8" type="color"><br>'+
+        '<input id="wywg9" type="checkbox">選択文字列の反転色 ✜\u2002\u2008　'+
+        '文字色 <input id="wywg10" type="color">　'+
+        '背景色 <input id="wywg11" type="color"><br>'+
+        '<input id="wywg12" type="checkbox">選択した画像・動画・絵文字の透過マスク ✜<br>'+
+        '<input id="wywg13" type="checkbox">Youtube動画　中央配置<br>'+
+        '<input id="wywg14" type="checkbox">Youtube動画　編集枠内で再生可能にする<br>'+
+        '<input id="wywg15" type="checkbox">PRE枠内を基本フォントで表示<br>'+
+        '<input id="wywg16" type="checkbox">Font Awesome の @import指定<br>'+
+        '<input id="wywg17" type="checkbox">編集枠の余白部配色 ✜<br>'+
+        '<input id="wywg18" type="checkbox">編集枠スクロールバー配色 ✜<br>'+
+        '<input id="wywg20" type="checkbox">編集枠内へのドラック&ドロップを無効にする'+
+        '<br>'+
+        '<p class="title_sub">Ameblo Writer の環境管理と補完</p>'+
+        'Ameblo Writer と Ameblo Wysiwyg の指定が競合<br>'+
+        'する項目｢✜｣ は Ameblo Writer が優先になります<br>'+
+        '編集枠内の監視 '+
+        '<label><input type="radio" name="if_check">障害報告</label>'+
+        '<label><input type="radio" name="if_check">改善報告</label>'+
+        '<label><input type="radio" name="if_check">OFF</label><br>'+
+        '<p id="bad">　📛「Stylus」の編集枠内のCSS修飾が無効です</p>'+
+        '<p id="good">　📛「Stylus」の編集枠内のCSS修飾が有効です</p>'+
+        css +'</div>';
+
+    if(!document.querySelector('.wywg_menu')){
+        document.querySelector('.l-body').insertAdjacentHTML('beforeend', menu_content); }
+
+
+    let editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+    if(editor_iframe){
+        let iframe_doc=editor_iframe.contentWindow.document;
+        if(iframe_doc){
+            let stylus_tag=iframe_doc.querySelector('.stylus');
+            if(!stylus_tag && wywg_set[19]==0){
+                let bad=document.querySelector('.wywg_menu #bad');
+                bad.style.display='block'; }
+            if(stylus_tag && wywg_set[19]==1){
+                let good=document.querySelector('.wywg_menu #good');
+                good.style.display='block'; }}}
+
+
+    setup();
+
+} // disp_panel()
+
+
+
+on_off_panel();
+
+function on_off_panel(){
+    let l_form=document.querySelector('.l-form');
+    let wywg_sw=document.querySelector('.p-editorStyle');
+    let wywg_menu=document.querySelector('.wywg_menu');
+    if(l_form && wywg_sw){
+        wywg_sw.onclick=function(event){
+            if(event.ctrlKey){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if(menu_view==0){
+                    menu_view=1;
+                    disp_panel();
+                    l_form.style.marginLeft='10px';
+                    l_form.style.marginRight='auto'; }
+                else{
+                    menu_view=0;
+                    wywg_menu.remove();
+                    l_form.style.marginLeft='auto';
+                    l_form.style.marginRight='auto'; }
+
+                on_off_panel(); }}}
+
+
+    let close=document.querySelector('#wywg_close');
+    if(l_form && close && wywg_menu){
+        close.onclick=function(event){
+            event.preventDefault();
+            menu_view=0;
+            wywg_menu.remove();
+            l_form.style.marginLeft='auto';
+            l_form.style.marginRight='auto'; }}
+
+
+    let c_balloon=document.querySelector('.c-balloon__text');
+    if(c_balloon){
+        c_balloon.textContent='Ameblo Wysiwyg Menu　▼ Ctrl+Click';
+        let bolloon=
+            'Ameblo Wysiwyg Menu　▼ Ctrl+Click'+
+            '<style>#js-editorStyleBalloon { top: -57px !important; right: 30px !important; '+
+            'width: 180px; padding: 8px 15px 6px 12px; }</style>';
+        c_balloon.innerHTML=bolloon; }
+
+} //on_off_panel()
+
+
+
+let once=0;
+
+function stylus_active(){
+    let editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+    if(editor_iframe){
+        let iframe_doc=editor_iframe.contentWindow.document;
+        if(iframe_doc){
+            if(once==0){
+                once=1;
+                let stylus_tag=iframe_doc.querySelector('.stylus');
+                if(!stylus_tag && wywg_set[19]==0){
+                    alert(
+                        "📛　拡張機能「Stylus」の編集枠内のCSS修飾が無効になりました\n\n"+
+                        "　　この警告を停止にするには、「デザイン幅で表示」 を 「Ctrl+Click」\n"+
+                        "　　して 「Ameblo Wysiwyg」 の 「編集枠内の監視」 を切換えます"); }
+                if(stylus_tag && wywg_set[19]==1){
+                    alert(
+                        "📛　拡張機能「Stylus」の編集枠内のCSS修飾が有効になりました\n\n"+
+                        "　　この警告を停止にするには、「デザイン幅で表示」 を 「Ctrl+Click」\n"+
+                        "　　して 「Ameblo Wysiwyg」 の 「編集枠内の監視」 を切換えます"); }
+            }}}
+
+} // stylus_active()
+
+
+
+
