@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.0
+// @version        2.1
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventry*
