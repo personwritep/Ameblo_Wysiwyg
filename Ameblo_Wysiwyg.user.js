@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.1
+// @version        2.2
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventry*
@@ -334,8 +334,10 @@ function disp_panel(){
 
         '#wywg_close { display: inline-block; padding: 0 3px; height: 19px; '+
         'line-height: 20px; border: 1px solid #ddd; border-radius: 2px; cursor: pointer; } '+
-        '.wywg_menu input { height: 18px; font-family: system-ui; text-align: center; '+
-        'margin-right: 6px; } '+
+        '.wywg_menu input { font-family: system-ui; line-height: 20px; height: 18px; '+
+        'text-align: center; margin-right: 6px; } '+
+        '.wywg_menu input[type="number"]::-webkit-inner-spin-button { '+
+        'height: 16px; margin-top: 2px; } '+
         '.wywg_menu input[type="radio"] { margin-right: 3px; vertical-align: -3px; } '+
         '.wywg_menu label { margin-left: 1em; } '+
 
@@ -505,5 +507,4 @@ function stylus_active(){
             }}}
 
 } // stylus_active()
-
 
