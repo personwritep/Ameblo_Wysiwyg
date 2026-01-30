@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.2
+// @version        2.3
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventry*
@@ -28,15 +28,22 @@ let wywg_set=[]; // Ameblo Wywg のユーザー設定
 
 let read_json=localStorage.getItem('Wywg_set'); // ローカルストレージ 保存名
 wywg_set=JSON.parse(read_json);
+let sure= // 期待される配列の雛形
+    [2, 16, 1.6, 1, 1, 1, 1, "#3970b5", "#cccccc", 1, "#ffffff", "#2b5d75",
+     1, 1, 1, 1, 1, 1, 1, 0, 0];
 if(wywg_set==null){
-    wywg_set=[0, 16, 1.6, 1, 1, 1, 1, "#3970b5", "#cccccc", 1, "#ffffff", "#2b5d75",
-              1, 1, 1, 1, 1, 1, 1, 0, 0]; }
-if(wywg_set.length<21){
-    wywg_set[20]=0; }
+    wywg_set=[...sure]; }
+else if(wywg_set.length<21){
+    for(let k=0; k<21; k++){
+        if(wywg_set[k]===undefined){
+            wywg_set[k]=sure[k]; }}}
+write_local(); // ローカルストレージ 保存
 
 
-let write_json=JSON.stringify(wywg_set);
-localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+function write_local(){
+    let write_json=JSON.stringify(wywg_set);
+    localStorage.setItem('Wywg_set', write_json); }
+
 
 
 let retry=0;
@@ -69,36 +76,35 @@ function main(){
 
 
 function insert_tag(){
-    let l_body=document.querySelector('.l-body');
-    let bgc1=window.getComputedStyle(l_body, null).getPropertyValue('background-color');
     let cke_contents=document.querySelector('.cke_contents');
     let bgc2=window.getComputedStyle(cke_contents, null).getPropertyValue('background-color');
-    let bdc1=window.getComputedStyle(cke_contents, null).getPropertyValue('border-color');
+    let out_html=document.documentElement;
+    let scroll_color=window.getComputedStyle(out_html, null).getPropertyValue('scrollbar-color');
+    let ck_font;
+    switch (wywg_set[0]){
+        case "3": ck_font='"Noto Sans JP", '; break;
+        case "4": ck_font='Meiryo, '; break;
+        case "5": ck_font='"Yu Gothic", '; break;
+        case "6": ck_font='"MS PGothic", '; break;
+        default: ck_font=''; }
 
-    let style_text='';
 
-    style_text+='.cke_editable { ';
-
-    if(wywg_set[0]==0){
-        style_text+='font-family: Meiryo, sans-serif !important; '; }
-    else if(wywg_set[0]==1){
-        style_text+='font-family: "ＭＳ Ｐゴシック", sans-serif !important; '; }
-
-    style_text+='font-size: '+ wywg_set[1] +'px !important; line-height: '+ wywg_set[2] +'; } ';
+    let style_text=
+        '.cke_editable { font-family: '+ ck_font +'sans-serif !important; '+
+        'font-size: '+ wywg_set[1] +'px !important; line-height: '+ wywg_set[2] +'; } ';
 
     if(wywg_set[3]==1){
-        if(wywg_set[0]==0){
-            style_text+=
-                '.cke_editable img[src*="emoji.ameba.jp"], '+
-                '.cke_editable img[src*=char2] { vertical-align: -2px; } '+
-                '.cke_editable img[src*=char3], '+
-                '.cke_editable img[src*=char4] { vertical-align: -3px; margin-top: -4px; } '; }
-        else if(wywg_set[0]==1){
-            style_text+=
-                '.cke_editable img[src*="emoji.ameba.jp"], '+
-                '.cke_editable img[src*=char2] { vertical-align: 0; margin: 0; } '+
-                '.cke_editable img[src*=char3], '+
-                '.cke_editable img[src*=char4] { vertical-align: -3px; margin-top: -4px; } '; }}
+        style_text+=
+            '.cke_editable img[src*="emoji.ameba.jp"], '+
+            '.cke_editable img[src*=char2] { vertical-align: -2px; } '+
+            '.cke_editable img[src*=char3], '+
+            '.cke_editable img[src*=char4] { vertical-align: -5px; margin-top: -4px; } '; }
+    else{
+        style_text+=
+            '.cke_editable img[src*="emoji.ameba.jp"], '+
+            '.cke_editable img[src*=char2], '+
+            '.cke_editable img[src*=char3], '+
+            '.cke_editable img[src*=char4] { vertical-align: text-bottom; margin: 0; } '; }
 
     if(wywg_set[4]==1){
         style_text+='video, img { vertical-align: middle; } '; }
@@ -156,12 +162,7 @@ function insert_tag(){
 
     if(wywg_set[18]==1){
         style_text+=
-            '::-webkit-scrollbar { width: 16px; } '+
-            '::-webkit-scrollbar-track { background: ' + bgc2 + '; } '+
-            '::-webkit-scrollbar-thumb { background: ' + bgc1 + '; '+
-            'box-shadow: inset 0 0 0 .5px ' + bdc1 + '; } '+
-            'html { scrollbar-color: ' +bgc1+' '+bgc2+ '; } '; }
-
+            'html[dir="ltr"] { scrollbar-color: '+ scroll_color +'; } '; }
 
     let insert_style;
     let editor_iframe=document.querySelector('.cke_wysiwyg_frame');
@@ -201,25 +202,18 @@ function insert_tag(){
 
 
 function setup(){
-    let bfont=document.getElementsByName('bfont');
-    if(bfont.length==3){
-        if(wywg_set[0]==0){
-            bfont[0].checked=true; }
-        else if(wywg_set[0]==1){
-            bfont[1].checked=true; }
-        else{
-            bfont[2].checked=true; }}
+    let wywg0=document.querySelector('#wywg0');
+    if(wywg0){
+        if(wywg_set[0]<2 || wywg_set[0]>6){
+            wywg_set[0]=2;
+            write_local(); } // ローカルストレージ 保存
+        wywg0.value=wywg_set[0];
 
-    for(let k=0; k<bfont.length; k++){
-        bfont[k].addEventListener('change', function(){
-            if(bfont[k].checked){
-                wywg_set[0]=k; }
-
+        wywg0.onchange=function(){
+            wywg_set[0]=wywg0.value;
             let write_json=JSON.stringify(wywg_set);
-            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
-
-            renew_insert_tag();
-        }); }
+            write_local(); // ローカルストレージ 保存
+            renew_insert_tag(); }}
 
 
     let if_check=document.getElementsByName('if_check');
@@ -235,12 +229,8 @@ function setup(){
         if_check[k].addEventListener('change', function(){
             if(if_check[k].checked){
                 wywg_set[19]=k; }
-
-            let write_json=JSON.stringify(wywg_set);
-            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
-
+            write_local(); // ローカルストレージ 保存
         }); }
-
 
 
     input_value_setter(1);
@@ -282,8 +272,7 @@ function checkbox_setter(k){
             else{
                 wywg.checked=true;
                 wywg_set[k]=1; }
-            let write_json=JSON.stringify(wywg_set);
-            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+            write_local(); // ローカルストレージ 保存
             renew_insert_tag(); }}}
 
 
@@ -295,8 +284,7 @@ function input_value_setter(k){
 
         wywg.onchange=function(){
             wywg_set[k]=wywg.value;
-            let write_json=JSON.stringify(wywg_set);
-            localStorage.setItem('Wywg_set', write_json); // ローカルストレージ 保存
+            write_local(); // ローカルストレージ 保存
             renew_insert_tag(); }}}
 
 
@@ -334,25 +322,28 @@ function disp_panel(){
 
         '#wywg_close { display: inline-block; padding: 0 3px; height: 19px; '+
         'line-height: 20px; border: 1px solid #ddd; border-radius: 2px; cursor: pointer; } '+
-        '.wywg_menu input { font-family: system-ui; line-height: 20px; height: 18px; '+
-        'text-align: center; margin-right: 6px; } '+
+        '.wywg_menu input { font: 16px/20px Meiryo; height: 18px; padding: 2px 0 0; '+
+        'text-align: center; margin-right: 6px; vertical-align: -1px; } '+
         '.wywg_menu input[type="number"]::-webkit-inner-spin-button { '+
         'height: 16px; margin-top: 2px; } '+
         '.wywg_menu input[type="radio"] { margin-right: 3px; vertical-align: -3px; } '+
         '.wywg_menu label { margin-left: 1em; } '+
 
+        '#wywg0 { padding: 0 6px; height: 26px; } '+
         '#wywg1, #wywg2 { width: 50px; } '+
         '#wywg3, #wywg4, #wywg5, #wywg6, #wywg9, #wywg12, #wywg13, #wywg14, '+
         '#wywg15, #wywg16, #wywg17, #wywg18, #wywg19, #wywg20 { '+
         'vertical-align: -3px; } '+
         '#wywg7, #wywg8, #wywg10, #wywg11 { height: 26px; width: 22px; margin: 0; '+
-        'border: none; background: none; vertical-align: -3px; } '+
+        'padding: 0; border: none; background: none; vertical-align: -3px; } '+
         '#bad, #good { height: 26px; margin-top: 4px; color: #fff; background: red; '+
         'display: none; } ';
 
     if(ua==1){
         css+=
             '.wywg_menu input[type="radio"] { vertical-align: -1px; } '+
+            '#wywg0 { padding: 1px 10px 0; background: #fff; border: 1px solid #999; '+
+            'border-radius: 3px; } '+
             '#wywg3, #wywg4, #wywg5, #wywg6, #wywg9, #wywg12, #wywg13, #wywg14, '+
             '#wywg15, #wywg16, #wywg17, #wywg18, #wywg20 { vertical-align: -1px; } '+
             '#wywg7, #wywg8, #wywg10, #wywg11 { height: 18px; width: 18px; }'; }
@@ -377,14 +368,19 @@ function disp_panel(){
         '<p class="title">'+ help +
         '　　〔 Ameblo Wysiwyg Menu 〕　　　'+
         '<b id="wywg_close">✖</b><p>'+
-        '基本フォント<label><input type="radio" name="bfont" value="1">Meiryo</label>'+
-        '<label><input type="radio" name="bfont" value="2">MS PGothic</label>'+
-        '<label><input type="radio" name="bfont" value="3">無指定</label><br>'+
+
+        '基本フォント 　　　　　<select id="wywg0">'+
+        '<option value="2">指定しない</option>'+
+        '<option value="3">Noto Sans JP</option>'+
+        '<option value="4">Meiryo</option>'+
+        '<option value="5">Yu Gothic</option>'+
+        '<option value="6">MS PGothic</option>'+
+        '</select><br>'+
         '基本フォントサイズ　　 '+
         '<input id="wywg1" type="number" step="1" min="12" max="20">px<br>'+
         '基本行間隔　　　　　　 '+
         '<input id="wywg2" type="number" step=".1" min=".5" max="3"><br>'+
-        '<input id="wywg3" type="checkbox">アメブロ絵文字 位置補正（基本フォント連動）✜<br>'+
+        '<input id="wywg3" type="checkbox">アメーバ絵文字 位置補正 ✜<br>'+
         '<input id="wywg4" type="checkbox">画像・動画の下側行との間隔補正<br>'+
         '<input id="wywg5" type="checkbox">h2・h3・h4 見出し 太字指定と行間隔補正<br>'+
         '<input id="wywg6" type="checkbox">リンク文字列の色　　　　'+
@@ -399,8 +395,8 @@ function disp_panel(){
         '<input id="wywg15" type="checkbox">PRE枠内を基本フォントで表示<br>'+
         '<input id="wywg16" type="checkbox">Font Awesome の @import指定<br>'+
         '<input id="wywg17" type="checkbox">編集枠の余白部配色 ✜<br>'+
-        '<input id="wywg18" type="checkbox">編集枠スクロールバー配色 ✜<br>'+
-        '<input id="wywg20" type="checkbox">編集枠内へのドラック&ドロップを無効にする'+
+        '<input id="wywg18" type="checkbox">編集枠スクロールバーの配色 ✜<br>'+
+        '<input id="wywg20" type="checkbox">編集枠内へのドラッグ&ドロップを無効にする'+
         '<br>'+
         '<p class="title_sub">Ameblo Writer の環境管理と補完</p>'+
         'Ameblo Writer と Ameblo Wysiwyg の指定が競合<br>'+
@@ -507,4 +503,3 @@ function stylus_active(){
             }}}
 
 } // stylus_active()
-
