@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.3
+// @version        2.4
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
-// @match        https://blog.ameba.jp/ucs/entry/srventry*
-// @exclude        https://blog.ameba.jp/ucs/entry/srventrylist.do*
+// @match        https://blog.ameba.jp/ucs/entry/srventryinsertinput.do*
+// @match        https://blog.ameba.jp/ucs/entry/srventryupdateinput.do*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
 // @grant        none
 // @updateURL        https://github.com/personwritep/Ameblo_Wysiwyg/raw/main/Ameblo_Wysiwyg.user.js
