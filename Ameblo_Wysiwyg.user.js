@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.4
+// @version        2.5
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventryinsertinput.do*
@@ -18,7 +18,7 @@ let agent=window.navigator.userAgent.toLowerCase();
 if(agent.indexOf('firefox') > -1){ ua=1; } // Firefoxの場合のフラッグ
 
 let FontAwesomeURL=
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css';
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.3.1/css/all.min.css';
 let help_url='https://ameblo.jp/personwritep/entry-12803805376.html';
 
 
@@ -181,21 +181,23 @@ function insert_tag(){
 
 
 
-    let outer_style_text=''; // body側（iframe外）に適用するCSS
     if(wywg_set[16]==1){
-        let outer_style_text_head=
-            '@import url("'+ FontAwesomeURL +'"); ';
-        outer_style_text+=outer_style_text_head; }
+        let outer_style_text= // body側（iframe外）に適用するCSS
+            '<style class="outer_asa">'+
+            '@import url("'+ FontAwesomeURL +'");</style>';
+
+        if(!document.querySelector('.outer_asa')){
+            document.documentElement.insertAdjacentHTML('beforeend', outer_style_text); }}
+
+
 
     if(wywg_set[20]==1){
-        outer_style_text+='.p-photos-editorDropArea { display: none; } '; }
+        let outer_style_text= // body側（iframe外）に適用するCSS
+            '<style class="outer_eda">'+
+            '.p-photos-editorDropArea { display: none; }</style>';
 
-    let insert_outer_style=document.createElement("style");
-    insert_outer_style.appendChild(document.createTextNode(outer_style_text));
-    insert_outer_style.setAttribute("class", "outer_style");
-
-    if(!document.querySelector('.outer_style')){
-        document.documentElement.appendChild(insert_outer_style); }
+        if(!document.querySelector('.outer_eda')){
+            document.documentElement.insertAdjacentHTML('beforeend', outer_style_text); }}
 
 } // insert_tag()
 
@@ -300,9 +302,7 @@ function renew_insert_tag(){
             if(iframe_doc.querySelector('.iframe_style')){
                 iframe_doc.querySelector('.iframe_style').remove(); }}}
 
-    if(document.querySelector('.outer_style')){
-        document.querySelector('.outer_style').remove(); }
-
+    document.querySelectorAll('[class^="outer_"]').forEach(style=>{ style.remove(); });
     insert_tag(); }
 
 
