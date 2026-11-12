@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Ameblo Wysiwyg ⭐
 // @namespace        http://tampermonkey.net/
-// @version        2.5
+// @version        2.6
 // @description        Ameba編集画面とブログページの Wysiwygを管理
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventryinsertinput.do*
@@ -228,11 +228,11 @@ function setup(){
             if_check[2].checked=true; }}
 
     for(let k=0; k<if_check.length; k++){
-        if_check[k].addEventListener('change', function(){
+        if_check[k].onchange=()=>{
             if(if_check[k].checked){
                 wywg_set[19]=k; }
-            write_local(); // ローカルストレージ 保存
-        }); }
+            write_local(); }} // ローカルストレージ 保存
+
 
 
     input_value_setter(1);
